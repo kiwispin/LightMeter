@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="A browser-based camera light meter that estimates color temperature in kelvin."
+    />
+    <meta name="theme-color" content="#111312" />
+    <title>Kelvin Meter</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="meter-stage" aria-label="Camera kelvin meter">
+        <video id="camera" class="camera" playsinline autoplay muted></video>
+        <canvas id="sampler" class="sampler" width="48" height="48" aria-hidden="true"></canvas>
+
+        <div class="top-bar">
+          <div>
+            <p class="eyebrow">Kelvin Meter</p>
+            <h1 id="kelvin">-- K</h1>
+          </div>
+          <button id="torchButton" class="icon-button" type="button" aria-label="Toggle torch" hidden>
+            <span aria-hidden="true">◐</span>
+          </button>
+        </div>
+
+        <div class="reticle" aria-hidden="true">
+          <span></span>
+          <span></span>
+        </div>
+
+        <div class="status-panel">
+          <div class="readout-grid">
+            <div>
+              <p class="label">Tint</p>
+              <p id="tint" class="value">--</p>
+            </div>
+            <div>
+              <p class="label">RGB</p>
+              <p id="rgb" class="value">--</p>
+            </div>
+            <div>
+              <p class="label">Light</p>
+              <p id="level" class="value">--</p>
+            </div>
+          </div>
+
+          <div class="controls">
+            <button id="startButton" class="primary-button" type="button">Start camera</button>
+            <button id="holdButton" class="secondary-button" type="button" disabled>Hold</button>
+          </div>
+
+          <p id="message" class="message">Use a white or grey target for the cleanest reading.</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js" type="module"></script>
+  </body>
+</html>
