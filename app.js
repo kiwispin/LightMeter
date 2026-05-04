@@ -161,6 +161,7 @@ function updateReading(reading) {
   rgbEl.textContent = `${Math.round(reading.r)} ${Math.round(reading.g)} ${Math.round(reading.b)}`;
   levelEl.textContent = `${Math.round(smoothLight)}%`;
   temperatureRail.style.setProperty("--temperature-position", `${temperaturePosition(smoothKelvin)}%`);
+  setKelvinColor(smoothKelvin);
 }
 
 function rgbToKelvin(r, g, b) {
@@ -202,6 +203,21 @@ function temperaturePosition(kelvin) {
   const max = Math.log(12000);
   const value = (Math.log(clamp(kelvin, 2000, 12000)) - min) / (max - min);
   return clamp(value * 100, 0, 100);
+}
+
+function setKelvinColor(kelvin) {
+  const position = temperaturePosition(kelvin) / 100;
+  const color =
+    position < 0.48
+      ? mixColor([244, 179, 95], [244, 242, 236], position / 0.48)
+      : mixColor([244, 242, 236], [141, 183, 255], (position - 0.48) / 0.52);
+
+  kelvinEl.style.setProperty("--kelvin-color", `rgb(${color.join(" ")})`);
+  kelvinEl.style.setProperty("--kelvin-glow", `rgba(${color.join(" ")}, 0.38)`);
+}
+
+function mixColor(start, end, amount) {
+  return start.map((channel, index) => Math.round(smooth(channel, end[index], clamp(amount, 0, 1))));
 }
 
 function formatTint(tint) {
