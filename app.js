@@ -5,6 +5,7 @@ const tintEl = document.querySelector("#tint");
 const rgbEl = document.querySelector("#rgb");
 const levelEl = document.querySelector("#level");
 const messageEl = document.querySelector("#message");
+const temperatureRail = document.querySelector(".temperature-rail");
 const startButton = document.querySelector("#startButton");
 const holdButton = document.querySelector("#holdButton");
 const torchButton = document.querySelector("#torchButton");
@@ -159,6 +160,7 @@ function updateReading(reading) {
   tintEl.textContent = formatTint(smoothTint);
   rgbEl.textContent = `${Math.round(reading.r)} ${Math.round(reading.g)} ${Math.round(reading.b)}`;
   levelEl.textContent = `${Math.round(smoothLight)}%`;
+  temperatureRail.style.setProperty("--temperature-position", `${temperaturePosition(smoothKelvin)}%`);
 }
 
 function rgbToKelvin(r, g, b) {
@@ -193,6 +195,13 @@ function tintFromRgb(r, g, b) {
 
 function relativeLightLevel(r, g, b) {
   return clamp(((0.2126 * r + 0.7152 * g + 0.0722 * b) / 255) * 100, 0, 100);
+}
+
+function temperaturePosition(kelvin) {
+  const min = Math.log(2000);
+  const max = Math.log(12000);
+  const value = (Math.log(clamp(kelvin, 2000, 12000)) - min) / (max - min);
+  return clamp(value * 100, 0, 100);
 }
 
 function formatTint(tint) {
