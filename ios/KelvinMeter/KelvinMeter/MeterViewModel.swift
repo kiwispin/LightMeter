@@ -5,8 +5,10 @@ import SwiftUI
 final class MeterViewModel: ObservableObject {
     @Published var kelvinText = "-- K"
     @Published var tintText = "--"
-    @Published var rgbText = "--"
-    @Published var levelText = "--"
+    @Published var luxText = "--"
+    @Published var evText = "--"
+    @Published var statsText = "Min --  Avg --  Max --"
+    @Published var whiteBalanceText = "WB --"
     @Published var message = "Use a white or grey target for the cleanest reading."
     @Published var calibrationStatus = "Cal off"
     @Published var isHeld = false
@@ -24,6 +26,12 @@ final class MeterViewModel: ObservableObject {
     private var smoothKelvin = 0.0
     private var smoothTint = 0.0
     private var smoothLight = 0.0
+    private var smoothLux = 0.0
+    private var smoothEV = 0.0
+    private var minLux = Double.infinity
+    private var maxLux = 0.0
+    private var totalLux = 0.0
+    private var readingCount = 0
 
     init() {
         calibrationOffset = UserDefaults.standard.double(forKey: calibrationStorageKey)
@@ -93,14 +101,18 @@ final class MeterViewModel: ObservableObject {
         smoothKelvin = smoothKelvin == 0 ? reading.kelvin : smooth(smoothKelvin, reading.kelvin, amount: 0.16)
         smoothTint = smooth(smoothTint, reading.tint, amount: 0.18)
         smoothLight = smoothLight == 0 ? reading.light : smooth(smoothLight, reading.light, amount: 0.18)
+        smoothLux = smoothLux == 0 ? reading.lux : smooth(smoothLux, reading.lux, amount: 0.18)
+        smoothEV = smoothEV == 0 ? reading.ev100 : smooth(smoothEV, reading.ev100, amount: 0.18)
 
         let calibratedKelvin = applyCalibration(smoothKelvin)
         kelvinText = "\(Int(round(calibratedKelvin / 50) * 50)) K"
         tintText = formatTint(smoothTint)
-        rgbText = "\(Int(reading.red.rounded())) \(Int(reading.green.rounded())) \(Int(reading.blue.rounded()))"
-        levelText = "\(Int(smoothLight.rounded()))%"
+        luxText = formatLux(smoothLux)
+        evText = String(format: "EV %.1f", smoothEV)
+        whiteBalanceText = whiteBalancePreset(for: calibratedKelvin)
         temperaturePosition = Self.temperaturePosition(for: calibratedKelvin)
         setKelvinColor(for: calibratedKelvin)
+        updateLuxStats(smoothLux)
 
     }
 
@@ -116,6 +128,44 @@ final class MeterViewModel: ObservableObject {
         calibrationStatus = calibrationOffset == 0 ? "Cal off" : "Cal \(formatSignedKelvin(calibrationOffset))"
     }
 
+    private func updateLuxStats(_ lux: Double) {
+        guard lux > 0 else {
+            return
+        }
+
+        minLux = min(minLux, lux)
+        maxLux = max(maxLux, lux)
+        totalLux += lux
+        readingCount += 1
+
+        let average = totalLux / Double(readingCount)
+        statsText = "Min \(formatCompactLux(minLux))  Avg \(formatCompactLux(average))  Max \(formatCompactLux(maxLux))"
+    }
+
+    private func formatLux(_ lux: Double) -> String {
+        if lux >= 10_000 {
+            return "\(Int((lux / 100).rounded() * 100)) lx"
+        }
+
+        if lux >= 1_000 {
+            return "\(Int((lux / 10).rounded() * 10)) lx"
+        }
+
+        return "\(Int(lux.rounded())) lx"
+    }
+
+    private func formatCompactLux(_ lux: Double) -> String {
+        if lux >= 10_000 {
+            return "\(Int((lux / 1_000).rounded()))k"
+        }
+
+        if lux >= 1_000 {
+            return String(format: "%.1fk", lux / 1_000)
+        }
+
+        return "\(Int(lux.rounded()))"
+    }
+
     private func formatTint(_ tint: Double) -> String {
         if abs(tint) < 4 {
             return "Neutral"
@@ -126,6 +176,23 @@ final class MeterViewModel: ObservableObject {
 
     private func formatSignedKelvin(_ kelvin: Double) -> String {
         kelvin > 0 ? "+\(Int(kelvin))K" : "\(Int(kelvin))K"
+    }
+
+    private func whiteBalancePreset(for kelvin: Double) -> String {
+        switch kelvin {
+        case ..<2_900:
+            return "WB Tungsten"
+        case ..<3_900:
+            return "WB 3200K"
+        case ..<4_900:
+            return "WB Fluoro"
+        case ..<6_300:
+            return "WB Daylight"
+        case ..<7_800:
+            return "WB Cloudy"
+        default:
+            return "WB Shade"
+        }
     }
 
     private func setKelvinColor(for kelvin: Double) {

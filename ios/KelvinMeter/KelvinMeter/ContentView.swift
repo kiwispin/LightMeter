@@ -94,11 +94,11 @@ struct ContentView: View {
     }
 
     private var bottomControls: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             HStack(spacing: 8) {
                 ReadoutTile(label: "Tint", value: viewModel.tintText)
-                ReadoutTile(label: "RGB", value: viewModel.rgbText)
-                ReadoutTile(label: "Light", value: viewModel.levelText)
+                ReadoutTile(label: "Lux", value: viewModel.luxText)
+                ReadoutTile(label: "Exposure", value: viewModel.evText)
             }
 
             HStack(spacing: 10) {
@@ -138,8 +138,38 @@ struct ContentView: View {
                 .buttonStyle(CompactMeterButtonStyle())
                 .disabled(!viewModel.isCameraRunning)
             }
+
+            VStack(spacing: 5) {
+                HStack(spacing: 8) {
+                    InfoChip(text: viewModel.whiteBalanceText)
+                    InfoChip(text: viewModel.calibrationStatus)
+                }
+
+                InfoChip(text: viewModel.statsText)
+            }
         }
         .frame(maxWidth: 520)
+    }
+}
+
+private struct InfoChip: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(.caption2.weight(.bold))
+            .fontDesign(.monospaced)
+            .foregroundStyle(.white.opacity(0.84))
+            .lineLimit(1)
+            .minimumScaleFactor(0.65)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 8)
+            .frame(height: 24)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 7))
+            .overlay {
+                RoundedRectangle(cornerRadius: 7)
+                    .stroke(.white.opacity(0.16))
+            }
     }
 }
 
@@ -196,7 +226,7 @@ private struct ReadoutTile: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 10)
-        .frame(height: 62)
+        .frame(height: 54)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 7))
         .overlay {
             RoundedRectangle(cornerRadius: 7)
@@ -251,7 +281,7 @@ private struct CompactMeterButtonStyle: ButtonStyle {
             .lineLimit(1)
             .minimumScaleFactor(0.72)
             .padding(.horizontal, 12)
-            .frame(height: 38)
+            .frame(height: 34)
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 7))
             .overlay {
                 RoundedRectangle(cornerRadius: 7)

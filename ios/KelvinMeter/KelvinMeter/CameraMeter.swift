@@ -6,9 +6,18 @@ struct MeterReading: Sendable {
     let kelvin: Double
     let tint: Double
     let light: Double
+    let lux: Double
+    let footCandles: Double
+    let ev100: Double
     let red: Double
     let green: Double
     let blue: Double
+}
+
+private struct ExposureSample: Sendable {
+    let iso: Double
+    let duration: Double
+    let aperture: Double
 }
 
 final class CameraMeter: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
@@ -183,7 +192,7 @@ final class CameraMeter: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate,
     ) {
         guard
             let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer),
-            let reading = Self.readCenterPatch(from: pixelBuffer)
+            let reading = Self.readCenterPatch(from: pixelBuffer, exposure: currentExposureSample())
         else {
             return
         }
@@ -191,7 +200,24 @@ final class CameraMeter: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate,
         Task { @MainActor in onReading?(reading) }
     }
 
-    private static func readCenterPatch(from pixelBuffer: CVPixelBuffer) -> MeterReading? {
+    private func currentExposureSample() -> ExposureSample? {
+        guard let device else {
+            return nil
+        }
+
+        let duration = CMTimeGetSeconds(device.exposureDuration)
+        guard duration > 0, device.iso > 0, device.lensAperture > 0 else {
+            return nil
+        }
+
+        return ExposureSample(
+            iso: Double(device.iso),
+            duration: duration,
+            aperture: Double(device.lensAperture)
+        )
+    }
+
+    private static func readCenterPatch(from pixelBuffer: CVPixelBuffer, exposure: ExposureSample?) -> MeterReading? {
         CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
 
@@ -254,8 +280,38 @@ final class CameraMeter: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate,
         let kelvin = rgbToKelvin(red: red, green: green, blue: blue)
         let tint = clamp((((red + blue) / 2) - green) / 128 * 100, min: -100, max: 100)
         let light = clamp((0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255 * 100, min: 0, max: 100)
+        let ev100 = estimateEV100(from: exposure)
+        let lux = estimateLux(ev100: ev100, light: light)
 
-        return MeterReading(kelvin: kelvin, tint: tint, light: light, red: red, green: green, blue: blue)
+        return MeterReading(
+            kelvin: kelvin,
+            tint: tint,
+            light: light,
+            lux: lux,
+            footCandles: lux / 10.7639,
+            ev100: ev100,
+            red: red,
+            green: green,
+            blue: blue
+        )
+    }
+
+    private static func estimateEV100(from exposure: ExposureSample?) -> Double {
+        guard let exposure else {
+            return 0
+        }
+
+        let ev = log2((exposure.aperture * exposure.aperture) / exposure.duration)
+        return clamp(ev - log2(exposure.iso / 100), min: -8, max: 22)
+    }
+
+    private static func estimateLux(ev100: Double, light: Double) -> Double {
+        guard ev100 > -8 else {
+            return 0
+        }
+
+        let luminanceBias = clamp(light / 50, min: 0.35, max: 2.4)
+        return clamp(2.5 * pow(2, ev100) * luminanceBias, min: 0, max: 200_000)
     }
 
     private static func rgbToKelvin(red: Double, green: Double, blue: Double) -> Double {
