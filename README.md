@@ -6,6 +6,8 @@ A static browser light-meter page for estimating correlated color temperature fr
 
 Open the page over HTTPS, start the camera, and point the center target at a white or neutral grey card in the light you want to measure. The displayed kelvin value is an estimate intended for filming decisions.
 
+Use **Cal 5600** while metering a neutral card under a known daylight reference to store a device-specific kelvin offset. Use **Reset** to clear that offset.
+
 Phone browsers and camera hardware often apply automatic white balance and image processing before JavaScript receives the pixels, so readings should be treated as a practical guide rather than a calibrated measurement.
 
 ## Publish With GitHub Pages

@@ -5,27 +5,36 @@ const tintEl = document.querySelector("#tint");
 const rgbEl = document.querySelector("#rgb");
 const levelEl = document.querySelector("#level");
 const messageEl = document.querySelector("#message");
+const calibrationStatusEl = document.querySelector("#calibrationStatus");
 const temperatureRail = document.querySelector(".temperature-rail");
 const startButton = document.querySelector("#startButton");
 const holdButton = document.querySelector("#holdButton");
+const calibrateButton = document.querySelector("#calibrateButton");
+const resetCalibrationButton = document.querySelector("#resetCalibrationButton");
 const torchButton = document.querySelector("#torchButton");
 
 const ctx = canvas.getContext("2d", { willReadFrequently: true });
+const CALIBRATION_TARGET_KELVIN = 5600;
+const CALIBRATION_STORAGE_KEY = "kelvinMeterCalibrationOffset";
 
 let stream;
 let videoTrack;
 let animationFrame;
 let isHeld = false;
 let torchOn = false;
+let calibrationOffset = loadCalibrationOffset();
 let smoothKelvin = 0;
 let smoothTint = 0;
 let smoothLight = 0;
 
 startButton.addEventListener("click", startCamera);
 holdButton.addEventListener("click", toggleHold);
+calibrateButton.addEventListener("click", calibrateToDaylight);
+resetCalibrationButton.addEventListener("click", resetCalibration);
 torchButton.addEventListener("click", toggleTorch);
 
 window.addEventListener("pagehide", stopCamera);
+updateCalibrationStatus();
 
 async function startCamera() {
   if (!navigator.mediaDevices?.getUserMedia) {
@@ -53,6 +62,7 @@ async function startCamera() {
 
     configureTorchButton();
     holdButton.disabled = false;
+    calibrateButton.disabled = false;
     startButton.textContent = "Camera on";
     setMessage("Metering from the center target.");
     sampleLoop();
@@ -155,13 +165,14 @@ function updateReading(reading) {
   smoothKelvin = smoothKelvin ? smooth(smoothKelvin, reading.kelvin, 0.16) : reading.kelvin;
   smoothTint = smooth(smoothTint, reading.tint, 0.18);
   smoothLight = smoothLight ? smooth(smoothLight, reading.light, 0.18) : reading.light;
+  const calibratedKelvin = applyCalibration(smoothKelvin);
 
-  kelvinEl.textContent = `${roundTo(smoothKelvin, 50)} K`;
+  kelvinEl.textContent = `${roundTo(calibratedKelvin, 50)} K`;
   tintEl.textContent = formatTint(smoothTint);
   rgbEl.textContent = `${Math.round(reading.r)} ${Math.round(reading.g)} ${Math.round(reading.b)}`;
   levelEl.textContent = `${Math.round(smoothLight)}%`;
-  temperatureRail.style.setProperty("--temperature-position", `${temperaturePosition(smoothKelvin)}%`);
-  setKelvinColor(smoothKelvin);
+  temperatureRail.style.setProperty("--temperature-position", `${temperaturePosition(calibratedKelvin)}%`);
+  setKelvinColor(calibratedKelvin);
 }
 
 function rgbToKelvin(r, g, b) {
@@ -196,6 +207,62 @@ function tintFromRgb(r, g, b) {
 
 function relativeLightLevel(r, g, b) {
   return clamp(((0.2126 * r + 0.7152 * g + 0.0722 * b) / 255) * 100, 0, 100);
+}
+
+function applyCalibration(kelvin) {
+  return clamp(kelvin + calibrationOffset, 1000, 40000);
+}
+
+function calibrateToDaylight() {
+  if (!smoothKelvin) {
+    setMessage("Start the camera and meter a neutral card first.");
+    return;
+  }
+
+  calibrationOffset = Math.round(CALIBRATION_TARGET_KELVIN - smoothKelvin);
+  const saved = saveCalibrationOffset(calibrationOffset);
+  updateCalibrationStatus();
+  setMessage(saved ? `Calibration set to ${CALIBRATION_TARGET_KELVIN}K.` : "Calibration set for this session.");
+}
+
+function resetCalibration() {
+  calibrationOffset = 0;
+  const saved = saveCalibrationOffset(calibrationOffset);
+  updateCalibrationStatus();
+  setMessage(saved ? "Calibration cleared." : "Session calibration cleared.");
+}
+
+function updateCalibrationStatus() {
+  calibrationStatusEl.textContent = calibrationOffset
+    ? `Cal ${formatSignedKelvin(calibrationOffset)}`
+    : "Cal off";
+}
+
+function formatSignedKelvin(kelvin) {
+  return kelvin > 0 ? `+${kelvin}K` : `${kelvin}K`;
+}
+
+function loadCalibrationOffset() {
+  try {
+    const stored = Number(localStorage.getItem(CALIBRATION_STORAGE_KEY));
+    return Number.isFinite(stored) ? clamp(stored, -10000, 10000) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveCalibrationOffset(offset) {
+  try {
+    if (offset) {
+      localStorage.setItem(CALIBRATION_STORAGE_KEY, String(offset));
+      return true;
+    }
+
+    localStorage.removeItem(CALIBRATION_STORAGE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function temperaturePosition(kelvin) {
