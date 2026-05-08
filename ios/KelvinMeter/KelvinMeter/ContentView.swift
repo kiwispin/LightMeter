@@ -94,8 +94,8 @@ struct ContentView: View {
     }
 
     private var bottomControls: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 8) {
+        VStack(spacing: 12) {
+            HStack(spacing: 10) {
                 ReadoutTile(label: "Tint", value: viewModel.tintText)
                 ReadoutTile(label: "Lux", value: viewModel.luxText)
                 ReadoutTile(label: "Exposure", value: viewModel.evText)
@@ -120,56 +120,71 @@ struct ContentView: View {
                 .disabled(!viewModel.isCameraRunning)
             }
 
-            HStack(spacing: 8) {
-                Button("Cal 5600") {
+            HStack(spacing: 14) {
+                UtilityButton(systemImage: "sun.max", label: "5600") {
                     viewModel.calibrateToDaylight()
                 }
-                .buttonStyle(CompactMeterButtonStyle())
                 .disabled(!viewModel.isCameraRunning)
 
-                Button("Reset") {
+                UtilityButton(systemImage: "arrow.counterclockwise", label: "Reset") {
                     viewModel.resetCalibration()
                 }
-                .buttonStyle(CompactMeterButtonStyle())
 
-                Button(viewModel.areCameraControlsLocked ? "Unlock" : "Lock") {
+                UtilityButton(
+                    systemImage: viewModel.areCameraControlsLocked ? "lock.open" : "lock",
+                    label: viewModel.areCameraControlsLocked ? "Unlock" : "Lock"
+                ) {
                     viewModel.toggleCameraLock()
                 }
-                .buttonStyle(CompactMeterButtonStyle())
                 .disabled(!viewModel.isCameraRunning)
             }
+            .frame(maxWidth: .infinity)
 
-            VStack(spacing: 5) {
-                HStack(spacing: 8) {
-                    InfoChip(text: viewModel.whiteBalanceText)
-                    InfoChip(text: viewModel.calibrationStatus)
-                }
+            VStack(spacing: 4) {
+                Text("\(viewModel.whiteBalanceText)   \(viewModel.calibrationStatus)")
+                    .font(.caption.weight(.semibold))
+                    .fontDesign(.monospaced)
+                    .foregroundStyle(.white.opacity(0.78))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
 
-                InfoChip(text: viewModel.statsText)
+                Text(viewModel.statsText)
+                    .font(.caption2.weight(.semibold))
+                    .fontDesign(.monospaced)
+                    .foregroundStyle(.white.opacity(0.62))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
+            .shadow(color: .black.opacity(0.4), radius: 8, y: 2)
         }
         .frame(maxWidth: 520)
     }
 }
 
-private struct InfoChip: View {
-    let text: String
+private struct UtilityButton: View {
+    let systemImage: String
+    let label: String
+    let action: () -> Void
 
     var body: some View {
-        Text(text)
-            .font(.caption2.weight(.bold))
-            .fontDesign(.monospaced)
-            .foregroundStyle(.white.opacity(0.84))
-            .lineLimit(1)
-            .minimumScaleFactor(0.65)
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 8)
-            .frame(height: 24)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 7))
-            .overlay {
-                RoundedRectangle(cornerRadius: 7)
-                    .stroke(.white.opacity(0.16))
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 15, weight: .bold))
+                Text(label)
+                    .font(.caption2.weight(.semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
+            .foregroundStyle(.white.opacity(0.88))
+            .frame(width: 62, height: 50)
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay {
+                Capsule().stroke(.white.opacity(0.16))
+            }
+            .shadow(color: .black.opacity(0.18), radius: 8, y: 4)
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -225,13 +240,14 @@ private struct ReadoutTile: View {
                 .foregroundStyle(.white)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 10)
-        .frame(height: 54)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 7))
+        .padding(.horizontal, 12)
+        .frame(height: 56)
+        .background(.black.opacity(0.18), in: RoundedRectangle(cornerRadius: 7))
         .overlay {
             RoundedRectangle(cornerRadius: 7)
-                .stroke(.white.opacity(0.18))
+                .stroke(.white.opacity(0.12))
         }
+        .shadow(color: .black.opacity(0.14), radius: 8, y: 4)
     }
 }
 
@@ -263,31 +279,13 @@ private struct SecondaryMeterButtonStyle: ButtonStyle {
             .font(.body.weight(.bold))
             .foregroundStyle(.white.opacity(0.86))
             .frame(height: 48)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+            .background(.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 8))
             .overlay {
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(.white.opacity(0.24))
+                    .stroke(.white.opacity(0.16))
             }
             .opacity(configuration.isPressed ? 0.78 : 1)
             .scaleEffect(configuration.isPressed ? 0.99 : 1)
-    }
-}
-
-private struct CompactMeterButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.caption.weight(.bold))
-            .foregroundStyle(.white.opacity(0.9))
-            .lineLimit(1)
-            .minimumScaleFactor(0.72)
-            .padding(.horizontal, 12)
-            .frame(height: 34)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 7))
-            .overlay {
-                RoundedRectangle(cornerRadius: 7)
-                    .stroke(.white.opacity(0.2))
-            }
-            .opacity(configuration.isPressed ? 0.78 : 1)
     }
 }
 
