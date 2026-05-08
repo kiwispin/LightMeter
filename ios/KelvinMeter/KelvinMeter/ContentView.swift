@@ -7,8 +7,7 @@ struct ContentView: View {
         GeometryReader { proxy in
             ZStack(alignment: .bottom) {
                 CameraPreview(session: viewModel.cameraMeter.session)
-                    .frame(width: proxy.size.width, height: proxy.size.height)
-                    .ignoresSafeArea()
+                    .ignoresSafeArea(.container, edges: .all)
 
                 LinearGradient(
                     colors: [.black.opacity(0.62), .clear, .black.opacity(0.38)],
@@ -33,10 +32,11 @@ struct ContentView: View {
 
                 bottomControls
                     .padding(.horizontal, 16)
-                    .padding(.bottom, max(proxy.safeAreaInsets.bottom + 10, 18))
+                    .padding(.bottom, max(proxy.safeAreaInsets.bottom + 42, 58))
             }
             .dynamicTypeSize(.xSmall ... .large)
             .background(Color(red: 17 / 255, green: 19 / 255, blue: 18 / 255))
+            .ignoresSafeArea(.container, edges: .all)
             .persistentSystemOverlays(.hidden)
         }
         .task {
