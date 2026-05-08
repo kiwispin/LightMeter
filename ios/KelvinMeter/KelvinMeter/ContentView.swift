@@ -10,7 +10,7 @@ struct ContentView: View {
                     .ignoresSafeArea()
 
                 LinearGradient(
-                    colors: [.black.opacity(0.82), .clear, .black.opacity(0.9)],
+                    colors: [.black.opacity(0.58), .clear, .black.opacity(0.22)],
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -19,18 +19,18 @@ struct ContentView: View {
                 VStack(spacing: 0) {
                     header
 
-                    Spacer(minLength: 18)
+                    Spacer(minLength: 24)
 
                     reticle
-
-                    Spacer(minLength: 154)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, proxy.safeAreaInsets.top + 10)
+                .padding(.bottom, 190)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 
-                bottomPanel
+                bottomControls
                     .padding(.horizontal, 16)
-                    .padding(.bottom, max(proxy.safeAreaInsets.bottom - 8, 6))
+                    .padding(.bottom, max(proxy.safeAreaInsets.bottom + 4, 12))
             }
             .dynamicTypeSize(.xSmall ... .large)
             .background(Color(red: 17 / 255, green: 19 / 255, blue: 18 / 255))
@@ -90,27 +90,34 @@ struct ContentView: View {
         .frame(width: 190, height: 190)
     }
 
-    private var bottomPanel: some View {
-        VStack(spacing: 8) {
+    private var bottomControls: some View {
+        VStack(spacing: 10) {
             HStack(spacing: 8) {
                 ReadoutTile(label: "Tint", value: viewModel.tintText)
                 ReadoutTile(label: "RGB", value: viewModel.rgbText)
                 ReadoutTile(label: "Light", value: viewModel.levelText)
             }
 
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 Button {
-                    if viewModel.isCameraRunning {
-                        viewModel.toggleHold()
-                    } else {
-                        viewModel.startCamera()
-                    }
+                    viewModel.startCamera()
                 } label: {
-                    Text(viewModel.isCameraRunning ? (viewModel.isHeld ? "Live" : "Hold") : "Start camera")
+                    Text("Camera")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(PrimaryMeterButtonStyle())
 
+                Button {
+                    viewModel.toggleHold()
+                } label: {
+                    Text(viewModel.isHeld ? "Live" : "Hold")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(SecondaryMeterButtonStyle())
+                .disabled(!viewModel.isCameraRunning)
+            }
+
+            HStack(spacing: 8) {
                 Button("Cal") {
                     viewModel.calibrateToDaylight()
                 }
@@ -128,15 +135,6 @@ struct ContentView: View {
                 .buttonStyle(CompactMeterButtonStyle())
                 .disabled(!viewModel.isCameraRunning)
             }
-        }
-        .padding(8)
-        .background {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(.black.opacity(0.72))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(.white.opacity(0.18))
-                }
         }
     }
 }
@@ -194,11 +192,11 @@ private struct ReadoutTile: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 10)
-        .frame(height: 58)
-        .background(.white.opacity(0.075), in: RoundedRectangle(cornerRadius: 7))
+        .frame(height: 56)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 7))
         .overlay {
             RoundedRectangle(cornerRadius: 7)
-                .stroke(.white.opacity(0.11))
+                .stroke(.white.opacity(0.18))
         }
     }
 }
@@ -231,10 +229,10 @@ private struct SecondaryMeterButtonStyle: ButtonStyle {
             .font(.body.weight(.bold))
             .foregroundStyle(.white.opacity(0.86))
             .frame(height: 48)
-            .background(.white.opacity(0.09), in: RoundedRectangle(cornerRadius: 8))
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
             .overlay {
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(.white.opacity(0.16))
+                    .stroke(.white.opacity(0.24))
             }
             .opacity(configuration.isPressed ? 0.78 : 1)
             .scaleEffect(configuration.isPressed ? 0.99 : 1)
@@ -249,10 +247,10 @@ private struct CompactMeterButtonStyle: ButtonStyle {
             .lineLimit(1)
             .padding(.horizontal, 10)
             .frame(height: 34)
-            .background(.white.opacity(0.09), in: RoundedRectangle(cornerRadius: 7))
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 7))
             .overlay {
                 RoundedRectangle(cornerRadius: 7)
-                    .stroke(.white.opacity(0.16))
+                    .stroke(.white.opacity(0.2))
             }
             .opacity(configuration.isPressed ? 0.78 : 1)
     }
