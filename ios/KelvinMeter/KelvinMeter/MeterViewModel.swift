@@ -33,7 +33,7 @@ final class MeterViewModel: ObservableObject {
             self?.handle(reading)
         }
         cameraMeter.onMessage = { [weak self] message in
-            self?.message = message
+            self?.handleMessage(message)
         }
     }
 
@@ -101,6 +101,11 @@ final class MeterViewModel: ObservableObject {
         levelText = "\(Int(smoothLight.rounded()))%"
         temperaturePosition = Self.temperaturePosition(for: calibratedKelvin)
         setKelvinColor(for: calibratedKelvin)
+
+    }
+
+    private func handleMessage(_ nextMessage: String) {
+        message = nextMessage
     }
 
     private func applyCalibration(_ kelvin: Double) -> Double {

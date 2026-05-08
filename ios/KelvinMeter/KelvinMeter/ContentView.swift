@@ -4,34 +4,38 @@ struct ContentView: View {
     @StateObject private var viewModel = MeterViewModel()
 
     var body: some View {
-        ZStack {
-            CameraPreview(session: viewModel.cameraMeter.session)
+        GeometryReader { proxy in
+            ZStack(alignment: .bottom) {
+                CameraPreview(session: viewModel.cameraMeter.session)
+                    .ignoresSafeArea()
+
+                LinearGradient(
+                    colors: [.black.opacity(0.82), .clear, .black.opacity(0.9)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
                 .ignoresSafeArea()
 
-            LinearGradient(
-                colors: [.black.opacity(0.82), .clear, .black.opacity(0.88)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+                VStack(spacing: 0) {
+                    header
 
-            VStack(spacing: 0) {
-                header
+                    Spacer(minLength: 18)
 
-                Spacer(minLength: 10)
+                    reticle
 
-                reticle
-
-                Spacer(minLength: 10)
+                    Spacer(minLength: 154)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, proxy.safeAreaInsets.top + 10)
 
                 bottomPanel
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, max(proxy.safeAreaInsets.bottom - 8, 6))
             }
-            .padding(.horizontal, 16)
-            .safeAreaPadding(.top, 10)
-            .safeAreaPadding(.bottom, 10)
             .dynamicTypeSize(.xSmall ... .large)
+            .background(Color(red: 17 / 255, green: 19 / 255, blue: 18 / 255))
+            .persistentSystemOverlays(.hidden)
         }
-        .background(Color(red: 17 / 255, green: 19 / 255, blue: 18 / 255))
         .task {
             viewModel.startCameraIfNeeded()
         }
@@ -87,7 +91,7 @@ struct ContentView: View {
     }
 
     private var bottomPanel: some View {
-        VStack(spacing: 9) {
+        VStack(spacing: 8) {
             HStack(spacing: 8) {
                 ReadoutTile(label: "Tint", value: viewModel.tintText)
                 ReadoutTile(label: "RGB", value: viewModel.rgbText)
@@ -107,7 +111,7 @@ struct ContentView: View {
                 }
                 .buttonStyle(PrimaryMeterButtonStyle())
 
-                Button("Cal 5600") {
+                Button("Cal") {
                     viewModel.calibrateToDaylight()
                 }
                 .buttonStyle(CompactMeterButtonStyle())
@@ -117,31 +121,15 @@ struct ContentView: View {
                     viewModel.resetCalibration()
                 }
                 .buttonStyle(CompactMeterButtonStyle())
-            }
 
-            HStack(alignment: .top, spacing: 8) {
-                Button(viewModel.areCameraControlsLocked ? "Unlock camera" : "Lock camera") {
+                Button(viewModel.areCameraControlsLocked ? "Unlock" : "Lock") {
                     viewModel.toggleCameraLock()
                 }
                 .buttonStyle(CompactMeterButtonStyle())
                 .disabled(!viewModel.isCameraRunning)
-
-                Text(viewModel.message)
-                    .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.76))
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.82)
-                    .frame(maxWidth: .infinity, alignment: .leading)
             }
-
-            Text(viewModel.calibrationStatus)
-                .font(.caption.weight(.medium))
-                .fontDesign(.monospaced)
-                .foregroundStyle(.white.opacity(0.66))
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(10)
+        .padding(8)
         .background {
             RoundedRectangle(cornerRadius: 8)
                 .fill(.black.opacity(0.72))
@@ -192,20 +180,21 @@ private struct ReadoutTile: View {
     let value: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 3) {
             Text(label)
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.64))
 
             Text(value)
-                .font(.body.weight(.bold))
+                .font(.callout.weight(.bold))
                 .fontDesign(.monospaced)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
                 .foregroundStyle(.white)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
+        .padding(.horizontal, 10)
+        .frame(height: 58)
         .background(.white.opacity(0.075), in: RoundedRectangle(cornerRadius: 7))
         .overlay {
             RoundedRectangle(cornerRadius: 7)
