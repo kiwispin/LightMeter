@@ -38,9 +38,17 @@ final class MeterViewModel: ObservableObject {
     }
 
     func startCamera() {
+        guard !isCameraRunning else {
+            return
+        }
+
         isCameraRunning = true
         message = "Starting camera..."
         cameraMeter.start()
+    }
+
+    func startCameraIfNeeded() {
+        startCamera()
     }
 
     func toggleHold() {

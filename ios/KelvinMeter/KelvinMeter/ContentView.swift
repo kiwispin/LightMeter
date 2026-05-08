@@ -4,38 +4,36 @@ struct ContentView: View {
     @StateObject private var viewModel = MeterViewModel()
 
     var body: some View {
-        GeometryReader { proxy in
-            ZStack {
-                CameraPreview(session: viewModel.cameraMeter.session)
-                    .ignoresSafeArea()
-
-                LinearGradient(
-                    colors: [.black.opacity(0.82), .clear, .black.opacity(0.86)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+        ZStack {
+            CameraPreview(session: viewModel.cameraMeter.session)
                 .ignoresSafeArea()
 
-                ScrollView(.vertical) {
-                    VStack(spacing: 0) {
-                        header
+            LinearGradient(
+                colors: [.black.opacity(0.82), .clear, .black.opacity(0.88)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
 
-                        Spacer(minLength: 28)
+            VStack(spacing: 0) {
+                header
 
-                        reticle
+                Spacer(minLength: 10)
 
-                        Spacer(minLength: 28)
+                reticle
 
-                        bottomPanel
-                    }
-                    .frame(minHeight: proxy.size.height)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 6)
-                    .padding(.bottom, 8)
-                }
-                .scrollIndicators(.hidden)
+                Spacer(minLength: 10)
+
+                bottomPanel
             }
-            .background(Color(red: 17 / 255, green: 19 / 255, blue: 18 / 255))
+            .padding(.horizontal, 16)
+            .safeAreaPadding(.top, 10)
+            .safeAreaPadding(.bottom, 10)
+            .dynamicTypeSize(.xSmall ... .large)
+        }
+        .background(Color(red: 17 / 255, green: 19 / 255, blue: 18 / 255))
+        .task {
+            viewModel.startCameraIfNeeded()
         }
     }
 
@@ -46,7 +44,7 @@ struct ContentView: View {
                 .foregroundStyle(.white.opacity(0.72))
 
             Text(viewModel.kelvinText)
-                .font(.system(size: 76, weight: .heavy, design: .default))
+                .font(.system(size: 64, weight: .heavy, design: .default))
                 .minimumScaleFactor(0.55)
                 .lineLimit(1)
                 .foregroundStyle(viewModel.kelvinColor)
@@ -85,51 +83,29 @@ struct ContentView: View {
                 .fill(.white.opacity(0.82))
                 .frame(width: 1, height: 92)
         }
-        .frame(width: 230, height: 230)
+        .frame(width: 190, height: 190)
     }
 
     private var bottomPanel: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 10) {
+        VStack(spacing: 9) {
+            HStack(spacing: 8) {
                 ReadoutTile(label: "Tint", value: viewModel.tintText)
                 ReadoutTile(label: "RGB", value: viewModel.rgbText)
                 ReadoutTile(label: "Light", value: viewModel.levelText)
             }
 
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 Button {
-                    viewModel.startCamera()
+                    if viewModel.isCameraRunning {
+                        viewModel.toggleHold()
+                    } else {
+                        viewModel.startCamera()
+                    }
                 } label: {
-                    Text(viewModel.isCameraRunning ? "Camera on" : "Start camera")
+                    Text(viewModel.isCameraRunning ? (viewModel.isHeld ? "Live" : "Hold") : "Start camera")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(PrimaryMeterButtonStyle())
-                .disabled(viewModel.isCameraRunning)
-
-                Button {
-                    viewModel.toggleHold()
-                } label: {
-                    Text(viewModel.isHeld ? "Live" : "Hold")
-                        .frame(width: 74)
-                }
-                .buttonStyle(SecondaryMeterButtonStyle())
-                .disabled(!viewModel.isCameraRunning)
-            }
-
-            HStack(spacing: 8) {
-                Text(viewModel.calibrationStatus)
-                    .font(.caption.weight(.medium))
-                    .fontDesign(.monospaced)
-                    .foregroundStyle(.white.opacity(0.72))
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 12)
-                    .frame(height: 38)
-                    .background(.white.opacity(0.075), in: RoundedRectangle(cornerRadius: 7))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 7)
-                            .stroke(.white.opacity(0.11))
-                    }
 
                 Button("Cal 5600") {
                     viewModel.calibrateToDaylight()
@@ -157,8 +133,15 @@ struct ContentView: View {
                     .minimumScaleFactor(0.82)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
+
+            Text(viewModel.calibrationStatus)
+                .font(.caption.weight(.medium))
+                .fontDesign(.monospaced)
+                .foregroundStyle(.white.opacity(0.66))
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(14)
+        .padding(10)
         .background {
             RoundedRectangle(cornerRadius: 8)
                 .fill(.black.opacity(0.72))
@@ -222,7 +205,7 @@ private struct ReadoutTile: View {
                 .foregroundStyle(.white)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
+        .padding(10)
         .background(.white.opacity(0.075), in: RoundedRectangle(cornerRadius: 7))
         .overlay {
             RoundedRectangle(cornerRadius: 7)
@@ -236,7 +219,7 @@ private struct PrimaryMeterButtonStyle: ButtonStyle {
         configuration.label
             .font(.body.weight(.bold))
             .foregroundStyle(Color(red: 16 / 255, green: 33 / 255, blue: 29 / 255))
-            .frame(height: 52)
+            .frame(height: 48)
             .background(
                 LinearGradient(
                     colors: [
@@ -258,7 +241,7 @@ private struct SecondaryMeterButtonStyle: ButtonStyle {
         configuration.label
             .font(.body.weight(.bold))
             .foregroundStyle(.white.opacity(0.86))
-            .frame(height: 52)
+            .frame(height: 48)
             .background(.white.opacity(0.09), in: RoundedRectangle(cornerRadius: 8))
             .overlay {
                 RoundedRectangle(cornerRadius: 8)
@@ -275,8 +258,8 @@ private struct CompactMeterButtonStyle: ButtonStyle {
             .font(.caption.weight(.bold))
             .foregroundStyle(.white.opacity(0.9))
             .lineLimit(1)
-            .padding(.horizontal, 12)
-            .frame(height: 38)
+            .padding(.horizontal, 10)
+            .frame(height: 34)
             .background(.white.opacity(0.09), in: RoundedRectangle(cornerRadius: 7))
             .overlay {
                 RoundedRectangle(cornerRadius: 7)
