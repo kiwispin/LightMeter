@@ -163,3 +163,7 @@ private struct RGBColor {
         )
     }
 }
+
+private func clamp(_ value: Double, min lowerBound: Double, max upperBound: Double) -> Double {
+    Swift.min(upperBound, Swift.max(lowerBound, value))
+}

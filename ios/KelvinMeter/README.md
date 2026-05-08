@@ -23,6 +23,8 @@ If command-line builds fail with a license message, run this once in Terminal:
 sudo xcodebuild -license
 ```
 
+If Xcode reports that the iOS platform is not installed, open **Xcode > Settings > Components** and install the current iOS platform/runtime. This is required before `xcodebuild` can select a real iPhone destination.
+
 ## Accuracy Notes
 
 This native version gives us more control than the web app, but it is still not a replacement for a calibrated color meter yet. The next serious accuracy step is a multi-point calibration profile for the iPhone 16 Pro camera you intend to use, ideally checked against known lights or a borrowed color meter.
