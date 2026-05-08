@@ -11,7 +11,7 @@ struct MeterReading: Sendable {
     let blue: Double
 }
 
-final class CameraMeter: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
+final class CameraMeter: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
     let session = AVCaptureSession()
 
     private let sessionQueue = DispatchQueue(label: "com.kiwispin.KelvinMeter.session")
