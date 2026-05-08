@@ -4,33 +4,39 @@ struct ContentView: View {
     @StateObject private var viewModel = MeterViewModel()
 
     var body: some View {
-        ZStack {
-            CameraPreview(session: viewModel.cameraMeter.session)
+        GeometryReader { proxy in
+            ZStack {
+                CameraPreview(session: viewModel.cameraMeter.session)
+                    .ignoresSafeArea()
+
+                LinearGradient(
+                    colors: [.black.opacity(0.82), .clear, .black.opacity(0.86)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
                 .ignoresSafeArea()
 
-            LinearGradient(
-                colors: [.black.opacity(0.74), .clear, .black.opacity(0.82)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+                ScrollView(.vertical) {
+                    VStack(spacing: 0) {
+                        header
 
-            VStack(spacing: 0) {
-                header
+                        Spacer(minLength: 28)
 
-                Spacer(minLength: 20)
+                        reticle
 
-                reticle
+                        Spacer(minLength: 28)
 
-                Spacer(minLength: 20)
-
-                bottomPanel
+                        bottomPanel
+                    }
+                    .frame(minHeight: proxy.size.height)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 6)
+                    .padding(.bottom, 8)
+                }
+                .scrollIndicators(.hidden)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            .padding(.bottom, 14)
+            .background(Color(red: 17 / 255, green: 19 / 255, blue: 18 / 255))
         }
-        .background(Color(red: 17 / 255, green: 19 / 255, blue: 18 / 255))
     }
 
     private var header: some View {
@@ -40,7 +46,7 @@ struct ContentView: View {
                 .foregroundStyle(.white.opacity(0.72))
 
             Text(viewModel.kelvinText)
-                .font(.system(size: 82, weight: .heavy, design: .default))
+                .font(.system(size: 76, weight: .heavy, design: .default))
                 .minimumScaleFactor(0.55)
                 .lineLimit(1)
                 .foregroundStyle(viewModel.kelvinColor)
@@ -79,7 +85,7 @@ struct ContentView: View {
                 .fill(.white.opacity(0.82))
                 .frame(width: 1, height: 92)
         }
-        .frame(width: 244, height: 244)
+        .frame(width: 230, height: 230)
     }
 
     private var bottomPanel: some View {
@@ -137,7 +143,7 @@ struct ContentView: View {
                 .buttonStyle(CompactMeterButtonStyle())
             }
 
-            HStack(spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
                 Button(viewModel.areCameraControlsLocked ? "Unlock camera" : "Lock camera") {
                     viewModel.toggleCameraLock()
                 }
@@ -147,10 +153,12 @@ struct ContentView: View {
                 Text(viewModel.message)
                     .font(.footnote)
                     .foregroundStyle(.white.opacity(0.76))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.82)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .padding(16)
+        .padding(14)
         .background {
             RoundedRectangle(cornerRadius: 8)
                 .fill(.black.opacity(0.72))
