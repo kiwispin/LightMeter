@@ -7,10 +7,11 @@ struct ContentView: View {
         GeometryReader { proxy in
             ZStack(alignment: .bottom) {
                 CameraPreview(session: viewModel.cameraMeter.session)
+                    .frame(width: proxy.size.width, height: proxy.size.height)
                     .ignoresSafeArea()
 
                 LinearGradient(
-                    colors: [.black.opacity(0.58), .clear, .black.opacity(0.22)],
+                    colors: [.black.opacity(0.62), .clear, .black.opacity(0.38)],
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -19,18 +20,20 @@ struct ContentView: View {
                 VStack(spacing: 0) {
                     header
 
-                    Spacer(minLength: 24)
+                    Spacer(minLength: 22)
 
                     reticle
+
+                    Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, proxy.safeAreaInsets.top + 10)
-                .padding(.bottom, 190)
+                .padding(.bottom, 214)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 
                 bottomControls
                     .padding(.horizontal, 16)
-                    .padding(.bottom, max(proxy.safeAreaInsets.bottom + 4, 12))
+                    .padding(.bottom, max(proxy.safeAreaInsets.bottom + 10, 18))
             }
             .dynamicTypeSize(.xSmall ... .large)
             .background(Color(red: 17 / 255, green: 19 / 255, blue: 18 / 255))
@@ -48,7 +51,7 @@ struct ContentView: View {
                 .foregroundStyle(.white.opacity(0.72))
 
             Text(viewModel.kelvinText)
-                .font(.system(size: 64, weight: .heavy, design: .default))
+                .font(.system(size: 76, weight: .heavy, design: .default))
                 .minimumScaleFactor(0.55)
                 .lineLimit(1)
                 .foregroundStyle(viewModel.kelvinColor)
@@ -91,7 +94,7 @@ struct ContentView: View {
     }
 
     private var bottomControls: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 12) {
             HStack(spacing: 8) {
                 ReadoutTile(label: "Tint", value: viewModel.tintText)
                 ReadoutTile(label: "RGB", value: viewModel.rgbText)
@@ -118,7 +121,7 @@ struct ContentView: View {
             }
 
             HStack(spacing: 8) {
-                Button("Cal") {
+                Button("Cal 5600") {
                     viewModel.calibrateToDaylight()
                 }
                 .buttonStyle(CompactMeterButtonStyle())
@@ -136,6 +139,7 @@ struct ContentView: View {
                 .disabled(!viewModel.isCameraRunning)
             }
         }
+        .frame(maxWidth: 520)
     }
 }
 
@@ -192,7 +196,7 @@ private struct ReadoutTile: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 10)
-        .frame(height: 56)
+        .frame(height: 62)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 7))
         .overlay {
             RoundedRectangle(cornerRadius: 7)
@@ -245,8 +249,9 @@ private struct CompactMeterButtonStyle: ButtonStyle {
             .font(.caption.weight(.bold))
             .foregroundStyle(.white.opacity(0.9))
             .lineLimit(1)
-            .padding(.horizontal, 10)
-            .frame(height: 34)
+            .minimumScaleFactor(0.72)
+            .padding(.horizontal, 12)
+            .frame(height: 38)
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 7))
             .overlay {
                 RoundedRectangle(cornerRadius: 7)
