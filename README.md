@@ -2,6 +2,8 @@
 
 A static browser light-meter page for estimating correlated color temperature from a phone camera.
 
+The repository also includes an early native iOS prototype in `ios/KelvinMeter`.
+
 ## Use
 
 Open the page over HTTPS, start the camera, and point the center target at a white or neutral grey card in the light you want to measure. The displayed kelvin value is an estimate intended for filming decisions.
