@@ -9,6 +9,7 @@ final class MeterViewModel: ObservableObject {
     @Published var evText = "--"
     @Published var statsText = "Min --  Avg --  Max --"
     @Published var whiteBalanceText = "WB --"
+    @Published var measurementStateText = "READY"
     @Published var message = "Use a white or grey target for the cleanest reading."
     @Published var calibrationStatus = "Cal off"
     @Published var isHeld = false
@@ -36,6 +37,7 @@ final class MeterViewModel: ObservableObject {
     init() {
         calibrationOffset = UserDefaults.standard.double(forKey: calibrationStorageKey)
         updateCalibrationStatus()
+        updateMeasurementState()
 
         cameraMeter.onReading = { [weak self] reading in
             self?.handle(reading)
@@ -52,6 +54,7 @@ final class MeterViewModel: ObservableObject {
 
         isCameraRunning = true
         message = "Starting camera..."
+        measurementStateText = "STARTING"
         cameraMeter.start()
     }
 
@@ -62,6 +65,7 @@ final class MeterViewModel: ObservableObject {
     func toggleHold() {
         isHeld.toggle()
         message = isHeld ? "Reading held." : "Metering from the center target."
+        updateMeasurementState()
     }
 
     func toggleCameraLock() {
@@ -72,6 +76,8 @@ final class MeterViewModel: ObservableObject {
         } else {
             cameraMeter.unlockCameraControls()
         }
+
+        updateMeasurementState()
     }
 
     func calibrateToDaylight() {
@@ -84,6 +90,7 @@ final class MeterViewModel: ObservableObject {
         UserDefaults.standard.set(calibrationOffset, forKey: calibrationStorageKey)
         updateCalibrationStatus()
         message = "Calibration set to 5600K."
+        updateMeasurementState()
     }
 
     func resetCalibration() {
@@ -91,6 +98,7 @@ final class MeterViewModel: ObservableObject {
         UserDefaults.standard.removeObject(forKey: calibrationStorageKey)
         updateCalibrationStatus()
         message = "Calibration cleared."
+        updateMeasurementState()
     }
 
     private func handle(_ reading: MeterReading) {
@@ -113,11 +121,19 @@ final class MeterViewModel: ObservableObject {
         temperaturePosition = Self.temperaturePosition(for: calibratedKelvin)
         setKelvinColor(for: calibratedKelvin)
         updateLuxStats(smoothLux)
+        updateMeasurementState(for: reading)
 
     }
 
     private func handleMessage(_ nextMessage: String) {
         message = nextMessage
+        if nextMessage.contains("blocked") {
+            measurementStateText = "CAMERA BLOCKED"
+        } else if nextMessage.contains("unavailable") {
+            measurementStateText = "NO CAMERA"
+        } else {
+            updateMeasurementState()
+        }
     }
 
     private func applyCalibration(_ kelvin: Double) -> Double {
@@ -126,6 +142,25 @@ final class MeterViewModel: ObservableObject {
 
     private func updateCalibrationStatus() {
         calibrationStatus = calibrationOffset == 0 ? "Cal off" : "Cal \(formatSignedKelvin(calibrationOffset))"
+    }
+
+    private func updateMeasurementState(for reading: MeterReading? = nil) {
+        let mode: String
+
+        if isHeld {
+            mode = "HELD"
+        } else if !isCameraRunning {
+            mode = "READY"
+        } else if let reading, reading.light < 8 {
+            mode = "LOW LIGHT"
+        } else if let reading, reading.light > 92 {
+            mode = "CLIPPED"
+        } else {
+            mode = "LIVE"
+        }
+
+        let lockState = areCameraControlsLocked ? "LOCKED" : "AUTO"
+        measurementStateText = "\(mode) · \(whiteBalanceText) · \(calibrationStatus) · \(lockState)"
     }
 
     private func updateLuxStats(_ lux: Double) {

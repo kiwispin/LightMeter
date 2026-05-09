@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var viewModel = MeterViewModel()
+    @State private var isShowingDetails = false
 
     var body: some View {
         GeometryReader { proxy in
@@ -23,11 +24,13 @@ struct ContentView: View {
 
                     reticle
 
+                    statusLine
+
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, proxy.safeAreaInsets.top + 10)
-                .padding(.bottom, 214)
+                .padding(.bottom, 186)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 
                 bottomControls
@@ -41,6 +44,10 @@ struct ContentView: View {
         }
         .task {
             viewModel.startCameraIfNeeded()
+        }
+        .sheet(isPresented: $isShowingDetails) {
+            MeterDetailsSheet(viewModel: viewModel)
+                .presentationDetents([.medium])
         }
     }
 
@@ -93,41 +100,45 @@ struct ContentView: View {
         .frame(width: 190, height: 190)
     }
 
+    private var statusLine: some View {
+        Text(viewModel.measurementStateText)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.white.opacity(0.78))
+            .lineLimit(1)
+            .minimumScaleFactor(0.68)
+            .padding(.top, 18)
+            .shadow(color: .black.opacity(0.44), radius: 10, y: 3)
+    }
+
     private var bottomControls: some View {
         VStack(spacing: 12) {
-            HStack(spacing: 10) {
-                ReadoutTile(label: "Tint", value: viewModel.tintText)
-                ReadoutTile(label: "Lux", value: viewModel.luxText)
-                ReadoutTile(label: "Exposure", value: viewModel.evText)
-            }
+            MetricsStrip(
+                tint: viewModel.tintText,
+                lux: viewModel.luxText,
+                exposure: viewModel.evText
+            )
 
             HStack(spacing: 10) {
                 Button {
-                    viewModel.startCamera()
+                    if viewModel.isCameraRunning {
+                        viewModel.toggleHold()
+                    } else {
+                        viewModel.startCamera()
+                    }
                 } label: {
-                    Text("Camera")
+                    Text(viewModel.isCameraRunning ? (viewModel.isHeld ? "Resume" : "Hold") : "Start Camera")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(PrimaryMeterButtonStyle())
 
-                Button {
-                    viewModel.toggleHold()
-                } label: {
-                    Text(viewModel.isHeld ? "Live" : "Hold")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(SecondaryMeterButtonStyle())
-                .disabled(!viewModel.isCameraRunning)
-            }
-
-            HStack(spacing: 14) {
-                UtilityButton(systemImage: "sun.max", label: "5600") {
+                UtilityButton(systemImage: "sun.max", label: "Cal") {
                     viewModel.calibrateToDaylight()
                 }
                 .disabled(!viewModel.isCameraRunning)
-
-                UtilityButton(systemImage: "arrow.counterclockwise", label: "Reset") {
-                    viewModel.resetCalibration()
+                .contextMenu {
+                    Button("Reset Calibration") {
+                        viewModel.resetCalibration()
+                    }
                 }
 
                 UtilityButton(
@@ -137,27 +148,93 @@ struct ContentView: View {
                     viewModel.toggleCameraLock()
                 }
                 .disabled(!viewModel.isCameraRunning)
-            }
-            .frame(maxWidth: .infinity)
 
-            VStack(spacing: 4) {
-                Text("\(viewModel.whiteBalanceText)   \(viewModel.calibrationStatus)")
-                    .font(.caption.weight(.semibold))
-                    .fontDesign(.monospaced)
-                    .foregroundStyle(.white.opacity(0.78))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-
-                Text(viewModel.statsText)
-                    .font(.caption2.weight(.semibold))
-                    .fontDesign(.monospaced)
-                    .foregroundStyle(.white.opacity(0.62))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                UtilityButton(systemImage: "info.circle", label: "Info") {
+                    isShowingDetails = true
+                }
             }
-            .shadow(color: .black.opacity(0.4), radius: 8, y: 2)
         }
         .frame(maxWidth: 520)
+    }
+}
+
+private struct MetricsStrip: View {
+    let tint: String
+    let lux: String
+    let exposure: String
+
+    var body: some View {
+        HStack(spacing: 0) {
+            MetricItem(label: "Tint", value: tint)
+            Divider().overlay(.white.opacity(0.16))
+            MetricItem(label: "Lux", value: lux)
+            Divider().overlay(.white.opacity(0.16))
+            MetricItem(label: "EV", value: exposure.replacingOccurrences(of: "EV ", with: ""))
+        }
+        .frame(height: 48)
+        .background(.black.opacity(0.2), in: RoundedRectangle(cornerRadius: 8))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(.white.opacity(0.12))
+        }
+        .shadow(color: .black.opacity(0.16), radius: 10, y: 5)
+    }
+}
+
+private struct MetricItem: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text(label)
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(.white.opacity(0.58))
+            Text(value)
+                .font(.callout.weight(.bold))
+                .fontDesign(.monospaced)
+                .foregroundStyle(.white.opacity(0.92))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+private struct MeterDetailsSheet: View {
+    @ObservedObject var viewModel: MeterViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Reading") {
+                    LabeledContent("White balance", value: viewModel.whiteBalanceText)
+                    LabeledContent("Calibration", value: viewModel.calibrationStatus)
+                    LabeledContent("Lux stats", value: viewModel.statsText)
+                    LabeledContent("State", value: viewModel.measurementStateText)
+                }
+
+                Section("Calibration") {
+                    Button("Calibrate to 5600K") {
+                        viewModel.calibrateToDaylight()
+                    }
+                    .disabled(!viewModel.isCameraRunning)
+
+                    Button("Reset Calibration", role: .destructive) {
+                        viewModel.resetCalibration()
+                    }
+                }
+            }
+            .navigationTitle("Meter Details")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -177,7 +254,7 @@ private struct UtilityButton: View {
                     .minimumScaleFactor(0.75)
             }
             .foregroundStyle(.white.opacity(0.88))
-            .frame(width: 62, height: 50)
+            .frame(width: 56, height: 48)
             .background(.ultraThinMaterial, in: Capsule())
             .overlay {
                 Capsule().stroke(.white.opacity(0.16))
@@ -222,35 +299,6 @@ private struct TemperatureRail: View {
     }
 }
 
-private struct ReadoutTile: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.white.opacity(0.64))
-
-            Text(value)
-                .font(.callout.weight(.bold))
-                .fontDesign(.monospaced)
-                .lineLimit(1)
-                .minimumScaleFactor(0.72)
-                .foregroundStyle(.white)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12)
-        .frame(height: 56)
-        .background(.black.opacity(0.18), in: RoundedRectangle(cornerRadius: 7))
-        .overlay {
-            RoundedRectangle(cornerRadius: 7)
-                .stroke(.white.opacity(0.12))
-        }
-        .shadow(color: .black.opacity(0.14), radius: 8, y: 4)
-    }
-}
-
 private struct PrimaryMeterButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -269,22 +317,6 @@ private struct PrimaryMeterButtonStyle: ButtonStyle {
                 in: RoundedRectangle(cornerRadius: 8)
             )
             .opacity(configuration.isPressed ? 0.84 : 1)
-            .scaleEffect(configuration.isPressed ? 0.99 : 1)
-    }
-}
-
-private struct SecondaryMeterButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.body.weight(.bold))
-            .foregroundStyle(.white.opacity(0.86))
-            .frame(height: 48)
-            .background(.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 8))
-            .overlay {
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(.white.opacity(0.16))
-            }
-            .opacity(configuration.isPressed ? 0.78 : 1)
             .scaleEffect(configuration.isPressed ? 0.99 : 1)
     }
 }
