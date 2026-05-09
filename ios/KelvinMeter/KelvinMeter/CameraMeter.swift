@@ -18,6 +18,8 @@ private struct ExposureSample: Sendable {
     let iso: Double
     let duration: Double
     let aperture: Double
+    let whiteBalanceTemperature: Double?
+    let whiteBalanceTint: Double?
 }
 
 final class CameraMeter: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
@@ -210,10 +212,14 @@ final class CameraMeter: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate,
             return nil
         }
 
+        let whiteBalance = device.temperatureAndTintValues(for: device.deviceWhiteBalanceGains)
+
         return ExposureSample(
             iso: Double(device.iso),
             duration: duration,
-            aperture: Double(device.lensAperture)
+            aperture: Double(device.lensAperture),
+            whiteBalanceTemperature: Double(whiteBalance.temperature),
+            whiteBalanceTint: Double(whiteBalance.tint)
         )
     }
 
@@ -277,8 +283,14 @@ final class CameraMeter: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate,
         let red = total.red / Double(trimmed.count)
         let green = total.green / Double(trimmed.count)
         let blue = total.blue / Double(trimmed.count)
-        let kelvin = rgbToKelvin(red: red, green: green, blue: blue)
-        let tint = clamp((((red + blue) / 2) - green) / 128 * 100, min: -100, max: 100)
+        let rgbKelvin = rgbToKelvin(red: red, green: green, blue: blue)
+        let kelvin = exposure?.whiteBalanceTemperature.map { whiteBalanceKelvin in
+            clamp(whiteBalanceKelvin * 0.68 + rgbKelvin * 0.32, min: 1_000, max: 40_000)
+        } ?? rgbKelvin
+        let rgbTint = clamp((((red + blue) / 2) - green) / 128 * 100, min: -100, max: 100)
+        let tint = exposure?.whiteBalanceTint.map { whiteBalanceTint in
+            clamp(whiteBalanceTint * 0.7 + rgbTint * 0.3, min: -100, max: 100)
+        } ?? rgbTint
         let light = clamp((0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255 * 100, min: 0, max: 100)
         let ev100 = estimateEV100(from: exposure)
         let lux = estimateLux(ev100: ev100, light: light)

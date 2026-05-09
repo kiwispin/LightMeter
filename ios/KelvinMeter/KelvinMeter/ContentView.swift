@@ -132,10 +132,13 @@ struct ContentView: View {
                 .buttonStyle(PrimaryMeterButtonStyle())
 
                 UtilityButton(systemImage: "sun.max", label: "Cal") {
-                    viewModel.calibrateToDaylight()
+                    isShowingDetails = true
                 }
                 .disabled(!viewModel.isCameraRunning)
                 .contextMenu {
+                    Button("Quick Daylight Capture") {
+                        viewModel.calibrateToDaylight()
+                    }
                     Button("Reset Calibration") {
                         viewModel.resetCalibration()
                     }
@@ -204,26 +207,71 @@ private struct MetricItem: View {
 private struct MeterDetailsSheet: View {
     @ObservedObject var viewModel: MeterViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var selectedReference = CalibrationReference.daylight
+    @State private var customKelvin = 5_600.0
 
     var body: some View {
         NavigationStack {
             List {
                 Section("Reading") {
+                    LabeledContent("Displayed kelvin", value: viewModel.kelvinText)
+                    LabeledContent("Raw kelvin", value: viewModel.rawKelvinText)
                     LabeledContent("White balance", value: viewModel.whiteBalanceText)
+                    LabeledContent("Confidence", value: viewModel.readingConfidenceText)
                     LabeledContent("Calibration", value: viewModel.calibrationStatus)
                     LabeledContent("Lux stats", value: viewModel.statsText)
                     LabeledContent("State", value: viewModel.measurementStateText)
                 }
 
-                Section("Calibration") {
-                    Button("Calibrate to 5600K") {
-                        viewModel.calibrateToDaylight()
+                Section("Phone Profile") {
+                    Text(viewModel.calibrationDetailText)
+                        .foregroundStyle(.secondary)
+
+                    Picker("Reference", selection: $selectedReference) {
+                        ForEach(CalibrationReference.allCases) { reference in
+                            Text(reference.shortTitle).tag(reference)
+                        }
                     }
-                    .disabled(!viewModel.isCameraRunning)
+                    .pickerStyle(.segmented)
+
+                    if selectedReference == .custom {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Custom")
+                                Spacer()
+                                Text("\(Int(customKelvin)) K")
+                                    .fontDesign(.monospaced)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Slider(value: $customKelvin, in: 2_000 ... 12_000, step: 50)
+                        }
+                    }
+
+                    Text(viewModel.calibrationCaptureText)
+                        .foregroundStyle(.secondary)
+
+                    if viewModel.isCalibrating {
+                        ProgressView(value: viewModel.calibrationProgress)
+
+                        Button("Cancel Capture", role: .destructive) {
+                            viewModel.cancelCalibration()
+                        }
+                    } else {
+                        Button("Capture Neutral Card") {
+                            viewModel.beginCalibration(reference: selectedReference, customKelvin: customKelvin)
+                        }
+                        .disabled(!viewModel.isCameraRunning)
+                    }
 
                     Button("Reset Calibration", role: .destructive) {
                         viewModel.resetCalibration()
                     }
+                }
+
+                Section("Reference Notes") {
+                    Text("Use Daylight/D55 only in clean midday daylight on a neutral card. Use Tungsten only with a known tungsten/halogen source. LED, screen, mixed, bounced, or colored light can look plausible and still be wrong.")
+                        .foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("Meter Details")
