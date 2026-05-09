@@ -11,6 +11,7 @@
 		10A000122B00000100000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10A000022B00000100000001 /* ContentView.swift */; };
 		10A000132B00000100000001 /* CameraMeter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10A000032B00000100000001 /* CameraMeter.swift */; };
 		10A000142B00000100000001 /* MeterViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10A000042B00000100000001 /* MeterViewModel.swift */; };
+		10A000192B00000100000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 10A0001A2B00000100000001 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,6 +21,7 @@
 		10A000042B00000100000001 /* MeterViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeterViewModel.swift; sourceTree = "<group>"; };
 		10A000052B00000100000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		10A000062B00000100000001 /* KelvinMeter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KelvinMeter.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		10A0001A2B00000100000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,6 +50,7 @@
 				10A000022B00000100000001 /* ContentView.swift */,
 				10A000032B00000100000001 /* CameraMeter.swift */,
 				10A000042B00000100000001 /* MeterViewModel.swift */,
+				10A0001A2B00000100000001 /* Assets.xcassets */,
 				10A000052B00000100000001 /* Info.plist */,
 			);
 			path = KelvinMeter;
@@ -120,6 +123,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				10A000192B00000100000001 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
